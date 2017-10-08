@@ -2,6 +2,7 @@ var fs = require('fs');
 var nps = require('path');
 
 exports.markdownTransfomer = function (opt, gift, require) {
+	// var loaderUtil = require('loader-utils');
 	var prefix = opt.prefix || '@'
 	var suffix = opt.suffix || '@'
 	var deep = ('deep' in opt) ? !!opt.deep : true;
@@ -17,6 +18,16 @@ exports.markdownTransfomer = function (opt, gift, require) {
 			new RegExp('^\\s*' + prefix + '\\s*(.+?)\\s*' + suffix + '\\s*(\\n?)$', 'gm'),
 			// /@\s*(.+?)\s*@/g,
 			function (m, path, newlineOrNull) {
+				// var lastIndexOfQ = m.lastIndexOf('?');
+				// var pathOption = {}
+				// if (lastIndexOfQ >= 0) {
+				// 	var query = m.substr(lastIndexOfQ)
+				// 	pathOption = loaderUtil.parseQuery(query);
+				// }
+				//
+				// if ('link' in pathOption) {
+				//
+				// }
 				path = path.trim();
 				if (!path) return m;
 				path = nps.join(dirname, path);
@@ -28,13 +39,13 @@ exports.markdownTransfomer = function (opt, gift, require) {
 				if (path === filename) {
 					return m;
 				}
-				
+
 				var fileContent = fs.readFileSync(path).toString();
 				// console.log(fileContent);
 				if (deep) {
 					fileContent = replace(fileContent, path);
 				}
-				
+
 				return fileContent + newlineOrNull;
 			}
 		);
