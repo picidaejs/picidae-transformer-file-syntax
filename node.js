@@ -1,5 +1,6 @@
 var fs = require('fs');
 var nps = require('path');
+var disableKey = 'disable-file-syntax';
 
 exports.markdownTransfomer = function (opt, gift, require) {
 	// var loaderUtil = require('loader-utils');
@@ -9,12 +10,15 @@ exports.markdownTransfomer = function (opt, gift, require) {
 
 	var filesMap = gift.filesMap;
 	var path = gift.path;
+	var meta = gift.meta || {};
+	var disableValue = meta[disableKey]
 	var publicPath = gift.publicPath;
 	if (!gift.data) return gift.data;
 	var selfFilename = filesMap[path];
 	// console.log(filename);
 
 	function replace(content, filename) {
+
 		var dirname = nps.dirname(filename);
 
 		function checkPath(path, filename, allowEquals) {
@@ -40,7 +44,7 @@ exports.markdownTransfomer = function (opt, gift, require) {
 				var fullpath = '';
 
 				// link::[why-need-require]../refs/why-need-require.md
-				if (currLink.startsWith('link::')) {
+				if (disableValue !== 'link' && currLink.startsWith('link::')) {
 					var title = '';
 					path = '';
 
@@ -69,18 +73,25 @@ exports.markdownTransfomer = function (opt, gift, require) {
 
 				}
 
-				fullpath = checkPath(currLink, filename);
-				if (fullpath) {
-					var fileContent = fs.readFileSync(fullpath).toString();
-					if (deep) {
-						fileContent = replace(fileContent, fullpath);
-					}
+				if (disableValue !== 'file-content') {
+					fullpath = checkPath(currLink, filename);
+					if (fullpath) {
+						var fileContent = fs.readFileSync(fullpath).toString();
+						if (deep) {
+							fileContent = replace(fileContent, fullpath);
+						}
 
-					return fileContent + newlineOrNull;
+						return fileContent + newlineOrNull;
+					}
 				}
+
 				return m;
 			}
 		);
+	}
+
+	if (disableValue === 'both') {
+		return gift.data;
 	}
 
 	gift.data = replace(gift.data, selfFilename);
