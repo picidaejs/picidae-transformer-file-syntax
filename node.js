@@ -11,13 +11,13 @@ exports.markdownTransfomer = function (opt, gift, require) {
 	var path = gift.path;
 	var publicPath = gift.publicPath;
 	if (!gift.data) return gift.data;
-	var filename = filesMap[path];
+	var selfFilename = filesMap[path];
 	// console.log(filename);
 
 	function replace(content, filename) {
 		var dirname = nps.dirname(filename);
 
-		function checkPath(path) {
+		function checkPath(path, filename, allowEquals) {
 			path = path.trim();
 			if (!path) return false;
 			path = nps.join(dirname, path);
@@ -26,7 +26,7 @@ exports.markdownTransfomer = function (opt, gift, require) {
 			} catch (err) {
 				return false;
 			}
-			if (path === filename) {
+			if (!allowEquals && path === filename) {
 				return false;
 			}
 			return path;
@@ -54,7 +54,7 @@ exports.markdownTransfomer = function (opt, gift, require) {
 					}
 
 					// console.log(title, path);
-					fullpath = checkPath(path);
+					fullpath = checkPath(path, selfFilename, true);
 					// console.log(fullpath);
 
 					if (fullpath) {
@@ -69,7 +69,7 @@ exports.markdownTransfomer = function (opt, gift, require) {
 
 				}
 
-				fullpath = checkPath(currLink);
+				fullpath = checkPath(currLink, filename);
 				if (fullpath) {
 					var fileContent = fs.readFileSync(fullpath).toString();
 					if (deep) {
@@ -83,6 +83,6 @@ exports.markdownTransfomer = function (opt, gift, require) {
 		);
 	}
 
-	gift.data = replace(gift.data, filename);
+	gift.data = replace(gift.data, selfFilename);
 	return gift.data;
 };
