@@ -2,7 +2,33 @@ var fs = require('fs');
 var nps = require('path');
 var disableKey = 'disable-file-syntax';
 
-exports.markdownTransfomer = function (opt, gift, require) {
+function findLink(filesMap, fullpath) {
+	var link = Object.keys(filesMap).find(function (link) {
+		return filesMap[link] === fullpath;
+	});
+	if (link != null) {
+		link = link === 'INDEX' ? '' : link;
+		return link.replace(/^\/*/, '/');
+	}
+	return false;
+}
+
+function checkPath(path, dirname, filename, allowEquals) {
+	path = path.trim();
+	if (!path) return false;
+	path = nps.join(dirname, path);
+	try {
+		path = require.resolve(path);
+	} catch (err) {
+		return false;
+	}
+	if (!allowEquals && path === filename) {
+		return false;
+	}
+	return path;
+}
+
+exports.markdownTransformer = function (opt, gift, require) {
 	// var loaderUtil = require('loader-utils');
 	var prefix = opt.prefix || '@'
 	var suffix = opt.suffix || '@'
@@ -12,7 +38,6 @@ exports.markdownTransfomer = function (opt, gift, require) {
 	var path = gift.path;
 	var meta = gift.meta || {};
 	var disableValue = meta[disableKey]
-	var publicPath = gift.publicPath;
 	if (!gift.data) return gift.data;
 	var selfFilename = filesMap[path];
 	// console.log(filename);
@@ -20,21 +45,6 @@ exports.markdownTransfomer = function (opt, gift, require) {
 	function replace(content, filename) {
 
 		var dirname = nps.dirname(filename);
-
-		function checkPath(path, filename, allowEquals) {
-			path = path.trim();
-			if (!path) return false;
-			path = nps.join(dirname, path);
-			try {
-				path = require.resolve(path);
-			} catch (err) {
-				return false;
-			}
-			if (!allowEquals && path === filename) {
-				return false;
-			}
-			return path;
-		}
 
 		return content.replace(
 			new RegExp('(^\\s*)' + prefix + '\\s*(.+?)\\s*' + suffix + '(\\s*\\n?)$', 'gm'),
@@ -58,23 +68,20 @@ exports.markdownTransfomer = function (opt, gift, require) {
 					}
 
 					// console.log(title, path);
-					fullpath = checkPath(path, selfFilename, true);
+					fullpath = checkPath(path, dirname, selfFilename, true);
 					// console.log(fullpath);
 
 					if (fullpath) {
-						var link = Object.keys(filesMap).find(function (link) {
-							return filesMap[link] === fullpath;
-						});
-						if (link) {
-							link = link === 'INDEX' ? '' : link;
-							return preappend + '[' + title + '](' + publicPath.replace(/\/*$/, '/') + link.replace(/^\/+/, '') + ')' + newlineOrNull;
+						var link = findLink(filesMap, fullpath);
+						if (link !== false) {
+							return preappend + '[' + title + '](' + link + ')' + newlineOrNull;
 						}
 					}
 
 				}
 
 				if (disableValue !== 'file-content') {
-					fullpath = checkPath(currLink, filename);
+					fullpath = checkPath(currLink, dirname, filename);
 					if (fullpath) {
 						var fileContent = fs.readFileSync(fullpath).toString();
 						if (deep) {
@@ -95,5 +102,38 @@ exports.markdownTransfomer = function (opt, gift, require) {
 	}
 
 	gift.data = replace(gift.data, selfFilename);
+	return gift.data;
+};
+
+
+exports.htmlTransformer = function (opt, gift, require) {
+	var filesMap = gift.filesMap;
+	var filename = filesMap[gift.path];
+	var fullpath = '';
+	var link = '';
+    var dirname = nps.dirname(filename);
+
+	gift.data.content = gift.data.content
+				.replace(
+					/(<a.*?href=")(.*?)(".*?)(>[^]*?<\/a>)/gi,
+					function (matched, prev, href, next, other) {
+						href = href.trim();
+						if (/^(http:|https:|ftp:|file:)?\/\//i.test(href)) {
+							return matched;
+						}
+
+						fullpath = checkPath(href, dirname, filename, true);
+						if (fullpath) {
+							link = findLink(filesMap, fullpath);
+							if (link !== false) {
+								// console.log(link, '->', fullpath);
+								// console.log(prev + link + next + other);
+								return prev + link + next + other;
+							}
+						}
+						return matched;
+					}
+				)
+
 	return gift.data;
 };
