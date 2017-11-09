@@ -7,7 +7,7 @@ function findLink(filesMap, fullpath) {
 		return filesMap[link] === fullpath;
 	});
 	if (link != null) {
-		link = link === 'INDEX' ? '' : link;
+		link = link === 'index' ? '' : link;
 		return link.replace(/^\/*/, '/');
 	}
 	return false;
