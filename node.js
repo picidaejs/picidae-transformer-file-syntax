@@ -7,16 +7,40 @@ function findLink(filesMap, fullpath) {
 		return filesMap[link] === fullpath;
 	});
 	if (link != null) {
-		link = link === 'INDEX' ? '' : link;
+		link = link === 'inde' ? '' : link;
 		return link.replace(/^\/*/, '/');
 	}
 	return false;
 }
 
-function checkPath(path, dirname, filename, allowEquals) {
+function checkPath(path, dirname, filename, allowEquals, alias) {
 	path = path.trim();
 	if (!path) return false;
-	path = nps.join(dirname, path);
+
+	if (path.startsWith('.')) {
+        path = nps.join(dirname, path);
+	} else if (path.startsWith('/')) {
+		// path = path
+	} else {
+		alias = alias || {};
+        var keys = Object.keys(alias);
+        var matchedAlias = keys.find(function (key) {
+            if (path === key.trim() || path.startsWith(key.trim().replace(/\/*$/, '/'))) {
+                return true;
+            }
+        });
+        if (matchedAlias == null) {
+        	return false
+        }
+		path = nps.resolve(
+			alias[matchedAlias],
+			path.replace(
+				new RegExp('^' + matchedAlias.replace(/\/*$/, '/?')),
+				''
+			)
+		);
+	}
+
 	try {
 		path = require.resolve(path);
 	} catch (err) {
@@ -32,6 +56,7 @@ exports.markdownTransformer = function (opt, gift, require) {
 	// var loaderUtil = require('loader-utils');
 	var prefix = opt.prefix || '@'
 	var suffix = opt.suffix || '@'
+	var alias = opt.alias || {}
 	var deep = ('deep' in opt) ? !!opt.deep : true;
 
 	var filesMap = gift.filesMap;
@@ -68,7 +93,7 @@ exports.markdownTransformer = function (opt, gift, require) {
 					}
 
 					// console.log(title, path);
-					fullpath = checkPath(path, dirname, selfFilename, true);
+					fullpath = checkPath(path, dirname, selfFilename, true, alias);
 					// console.log(fullpath);
 
 					if (fullpath) {
@@ -81,7 +106,7 @@ exports.markdownTransformer = function (opt, gift, require) {
 				}
 
 				if (disableValue !== 'file-content') {
-					fullpath = checkPath(currLink, dirname, filename);
+					fullpath = checkPath(currLink, dirname, filename, false, alias);
 					if (fullpath) {
 						var fileContent = fs.readFileSync(fullpath).toString();
 						if (deep) {
@@ -107,6 +132,7 @@ exports.markdownTransformer = function (opt, gift, require) {
 
 
 exports.htmlTransformer = function (opt, gift, require) {
+	var alias = opt.alias || {}
 	var filesMap = gift.filesMap;
 	var filename = filesMap[gift.path];
 	var fullpath = '';
@@ -122,7 +148,7 @@ exports.htmlTransformer = function (opt, gift, require) {
 							return matched;
 						}
 
-						fullpath = checkPath(href, dirname, filename, true);
+						fullpath = checkPath(href, dirname, filename, true, alias);
 						if (fullpath) {
 							link = findLink(filesMap, fullpath);
 							if (link !== false) {
