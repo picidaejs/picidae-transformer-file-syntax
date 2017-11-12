@@ -1,12 +1,20 @@
 {
   "name": "picidae-transformer-file-syntax",
   "version": "0.0.3",
-  "description": "",
+  "description": "picidae-transformer-file-syntax",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/picidaejs/picidae-transformer-file-syntax.git"
+  },
+  "bugs": {
+    "url": "https://github.com/picidaejs/picidae-transformer-file-syntax/issues"
+  },
+  "homepage": "https://github.com/picidaejs/picidae-transformer-file-syntax#readme"
 }
