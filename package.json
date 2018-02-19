@@ -1,6 +1,6 @@
 {
   "name": "picidae-transformer-file-syntax",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "picidae-transformer-file-syntax",
   "main": "index.js",
   "scripts": {
