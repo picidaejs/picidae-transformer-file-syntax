@@ -152,7 +152,10 @@ exports.htmlTransformer = function (opt, gift, require) {
                                 return matched
                               }
                               var parsed = nUrl.parse(href)
-                              var hash = encodeURIComponent(parsed.hash || '')
+                              var hash = ''
+                              if (parsed.hash) {
+                                hash = encodeURIComponent(parsed.hash.substring(1))
+                              }
                               fullpath = checkPath(parsed.pathname || '', dirname, filename, true, alias)
                               if (fullpath) {
                                 link = findLink(filesMap, fullpath)
