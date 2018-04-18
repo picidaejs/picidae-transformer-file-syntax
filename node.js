@@ -4,7 +4,7 @@ var nUrl = require('url')
 var disableKey = 'disable-file-syntax'
 
 function findLink(filesMap, fullpath) {
-  var link = Object.keys(filesMap).find(function (link) {
+  var link = Object.keys(filesMap).find(function(link) {
     return filesMap[link] === fullpath
   })
   if (link != null) {
@@ -25,8 +25,11 @@ function checkPath(path, dirname, filename, allowEquals, alias) {
   } else {
     alias = alias || {}
     var keys = Object.keys(alias)
-    var matchedAlias = keys.find(function (key) {
-      if (path === key.trim() || path.startsWith(key.trim().replace(/\/*$/, '/'))) {
+    var matchedAlias = keys.find(function(key) {
+      if (
+        path === key.trim() ||
+        path.startsWith(key.trim().replace(/\/*$/, '/'))
+      ) {
         return true
       }
     })
@@ -35,10 +38,7 @@ function checkPath(path, dirname, filename, allowEquals, alias) {
     }
     path = nps.resolve(
       alias[matchedAlias],
-      path.replace(
-        new RegExp('^' + matchedAlias.replace(/\/*$/, '/?')),
-        ''
-      )
+      path.replace(new RegExp('^' + matchedAlias.replace(/\/*$/, '/?')), '')
     )
   }
 
@@ -53,14 +53,12 @@ function checkPath(path, dirname, filename, allowEquals, alias) {
   return path
 }
 
-exports.markdownTransformer = function (opt, gift, require) {
+exports.markdownTransformer = function(opt, gift, require) {
   // var loaderUtil = require('loader-utils');
   var prefix = opt.prefix || '@'
   var suffix = opt.suffix || '@'
   var alias = opt.alias || {}
-  var deep = (
-               'deep' in opt
-             ) ? !!opt.deep : true
+  var deep = 'deep' in opt ? !!opt.deep : true
 
   var filesMap = gift.filesMap
   var path = gift.path
@@ -72,13 +70,15 @@ exports.markdownTransformer = function (opt, gift, require) {
   // console.log(filename);
 
   function replace(content, filename) {
-
     var dirname = nps.dirname(filename)
 
     return content.replace(
-      new RegExp('(^\\s*)' + prefix + '\\s*(.+?)\\s*' + suffix + '(\\s*\\n?)$', 'gm'),
+      new RegExp(
+        '(^\\s*)' + prefix + '\\s*(.+?)\\s*' + suffix + '(\\s*\\n?)$',
+        'gm'
+      ),
       // /@\s*(.+?)\s*@/g,
-      function (m, preappend, path, newlineOrNull) {
+      function(m, preappend, path, newlineOrNull) {
         var currLink = path.trim()
         var fullpath = ''
 
@@ -106,7 +106,6 @@ exports.markdownTransformer = function (opt, gift, require) {
               return preappend + '[' + title + '](' + link + ')' + newlineOrNull
             }
           }
-
         }
 
         if (disableValue !== 'file-content') {
@@ -134,8 +133,7 @@ exports.markdownTransformer = function (opt, gift, require) {
   return gift.data
 }
 
-
-exports.htmlTransformer = function (opt, gift, require) {
+exports.htmlTransformer = function(opt, gift, require) {
   var alias = opt.alias || {}
   var filesMap = gift.filesMap
   var filename = filesMap[gift.path]
@@ -143,31 +141,38 @@ exports.htmlTransformer = function (opt, gift, require) {
   var link = ''
   var dirname = nps.dirname(filename)
 
-  gift.data.content = gift.data.content
-                          .replace(
-                            /(<a.*?href=")(.*?)(".*?)(>[^]*?<\/a>)/gi,
-                            function (matched, prev, href, next, other) {
-                              href = href.trim()
-                              if (/^(http:|https:|ftp:|file:)?\/\//i.test(href)) {
-                                return matched
-                              }
-                              var parsed = nUrl.parse(href)
-                              var hash = ''
-                              if (parsed.hash) {
-                                hash = '#' + encodeURIComponent(parsed.hash.substring(1))
-                              }
-                              fullpath = checkPath(parsed.pathname || '', dirname, filename, true, alias)
-                              if (fullpath) {
-                                link = findLink(filesMap, fullpath)
-                                if (link !== false) {
-                                  // console.log(link, '->', fullpath);
-                                  // console.log(prev + link + next + other);
-                                  return prev + link + hash + next + other
-                                }
-                              }
-                              return matched
-                            }
-                          )
+  gift.data.content = gift.data.content.replace(
+    /(<a.*?href="?)([^\s>]+)("?.*?)(>[^]*?<\/a>)/gi,
+    function(matched, prev, href, next, other) {
+      href = href.trim()
+      if (/^(http:|https:|ftp:|file:)?\/\//i.test(href)) {
+        return matched
+      }
+      var parsed = nUrl.parse(href)
+      var hash = ''
+      if (parsed.hash) {
+        hash = '#' + encodeURIComponent(parsed.hash.substring(1))
+      }
+
+      fullpath = checkPath(
+        parsed.pathname || '',
+        dirname,
+        filename,
+        true,
+        alias
+      )
+
+      // console.log(link, '->', fullpath);
+      // console.log(prev + link + next + other);
+      if (fullpath) {
+        link = findLink(filesMap, fullpath)
+        if (link !== false) {
+          return prev + link + hash + next + other
+        }
+      }
+      return matched
+    }
+  )
 
   return gift.data
 }
