@@ -155,18 +155,20 @@ exports.htmlTransformer = function(opt, gift, require) {
       }
 
       fullpath = checkPath(
-        parsed.pathname || '',
+        decodeURIComponent(parsed.pathname || ''),
         dirname,
         filename,
         true,
         alias
       )
 
-      // console.log(link, '->', fullpath);
-      // console.log(prev + link + next + other);
+
       if (fullpath) {
         link = findLink(filesMap, fullpath)
         if (link !== false) {
+          if (!prev.endsWith('"')) {
+            link = JSON.stringify(link)
+          }
           return prev + link + hash + next + other
         }
       }
