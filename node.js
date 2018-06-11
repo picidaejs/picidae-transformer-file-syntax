@@ -18,11 +18,7 @@ function checkPath(path, dirname, filename, allowEquals, alias) {
   path = path.trim()
   if (!path) return false
 
-  if (path.startsWith('.')) {
-    path = nps.join(dirname, path)
-  } else if (path.startsWith('/')) {
-    // path = path
-  } else {
+  function aliasMatched() {
     alias = alias || {}
     var keys = Object.keys(alias)
     var matchedAlias = keys.find(function(key) {
@@ -36,10 +32,17 @@ function checkPath(path, dirname, filename, allowEquals, alias) {
     if (matchedAlias == null) {
       return false
     }
-    path = nps.resolve(
+    return nps.resolve(
       alias[matchedAlias],
       path.replace(new RegExp('^' + matchedAlias.replace(/\/*$/, '/?')), '')
     )
+  }
+
+  var matchedPath = aliasMatched()
+  if (matchedPath) {
+    path = matchedPath
+  } else {
+    path = nps.resolve(dirname, path)
   }
 
   try {
@@ -96,9 +99,7 @@ exports.markdownTransformer = function(opt, gift, require) {
             path = RegExp.$1
           }
 
-          // console.log(title, path);
           fullpath = checkPath(path, dirname, selfFilename, true, alias)
-          // console.log(fullpath);
 
           if (fullpath) {
             var link = findLink(filesMap, fullpath)
@@ -153,7 +154,7 @@ exports.htmlTransformer = function(opt, gift, require) {
       if (parsed.hash) {
         hash = '#' + encodeURIComponent(parsed.hash.substring(1))
       }
-
+      // console.log('parsed.pathname', decodeURIComponent(parsed.pathname))
       fullpath = checkPath(
         decodeURIComponent(parsed.pathname || ''),
         dirname,
@@ -161,7 +162,6 @@ exports.htmlTransformer = function(opt, gift, require) {
         true,
         alias
       )
-
 
       if (fullpath) {
         link = findLink(filesMap, fullpath)
